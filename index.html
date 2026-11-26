@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101827">
+<title>AV Automatic Video Creator</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1220;--panel:#131e30;--panel2:#1b2940;--line:#2b3b54;--text:#eef4ff;--muted:#a9b8ce;--accent:#ff7a1a;--green:#35c98a;--red:#ff6b6b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 system-ui,"Noto Sans Devanagari",sans-serif}
+main{max-width:900px;margin:auto;padding:16px}h1{font-size:25px;margin:5px 0}h2{font-size:18px;margin:0 0 10px}p{margin:5px 0 12px}.muted,.hint{color:var(--muted);font-size:13px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:15px;margin:13px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:600px){.grid{grid-template-columns:1fr}}
+label{display:block;font-size:13px;color:var(--muted);margin:9px 0 4px}
+input,textarea,select{width:100%;background:#0c1626;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:11px;font:inherit}
+input[type=file]{padding:9px}textarea{min-height:76px;resize:vertical}
+button{border:0;border-radius:11px;padding:12px 15px;background:var(--accent);color:#fff;font-weight:700;font:inherit;cursor:pointer}
+button.secondary{background:var(--panel2);border:1px solid var(--line)}button:disabled{opacity:.45}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.pill{display:inline-block;padding:3px 9px;border-radius:30px;background:#273852;color:#d8e5fa;font-size:12px}
+.media-list{display:grid;gap:8px;margin-top:10px}
+.media-item{display:grid;grid-template-columns:64px 1fr;gap:10px;align-items:center;background:#0c1626;border:1px solid var(--line);border-radius:11px;padding:8px}
+.thumb{width:64px;height:54px;object-fit:cover;border-radius:7px;background:#25344b}
+.media-item input{margin-top:4px;padding:8px}
+.preview-wrap{background:#05080e;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+canvas{width:100%;height:auto;display:block;aspect-ratio:16/9;background:#000}
+.status{padding:10px;border-radius:10px;background:#0c1626;margin-top:10px;color:var(--muted);white-space:pre-wrap}
+.good{color:var(--green)}.bad{color:var(--red)}
+.check{padding:7px 0;border-bottom:1px solid var(--line)}.check:last-child{border:0}
+small{color:var(--muted)}
+</style>
+</head>
+<body>
+<main>
+  <h1>AV Automatic Video Creator</h1>
+  <p class="muted">अपनी फोटो और वीडियो अपलोड करें। ऐप उन्हें क्रम में जोड़कर टेक्स्ट और वैकल्पिक ऑडियो के साथ वीडियो तैयार करेगा।</p>
+
+  <section class="card">
+    <span class="pill">चरण 1</span>
+    <h2>अपनी फोटो और वीडियो जोड़ें</h2>
+    <label for="mediaFiles">फोन से फोटो / वीडियो चुनें (एक से अधिक चुन सकते हैं)</label>
+    <input id="mediaFiles" type="file" accept="image/*,video/*" multiple>
+    <div class="hint">बेहतर परिणाम के लिए साफ और अपने इस्तेमाल के अधिकार वाली फाइलें चुनें।</div>
+    <div id="mediaList" class="media-list"></div>
+    <div class="actions">
+      <button id="clearMedia" class="secondary" type="button">सभी हटाएँ</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <span class="pill">चरण 2</span>
+    <h2>वीडियो की जानकारी</h2>
+    <label for="topic">वीडियो का विषय</label>
+    <input id="topic" placeholder="जैसे: मेरा नया प्रोडक्ट, यात्रा, मोटिवेशन">
+    <div class="grid">
+      <div><label for="ratio">वीडियो का आकार</label>
+        <select id="ratio"><option value="16:9">16:9 — YouTube</option><option value="9:16">9:16 — Shorts / Reels</option><option value="1:1">1:1 — Square</option></select>
+      </div>
+      <div><label for="seconds">हर फोटो का समय (सेकंड)</label>
+        <input id="seconds" type="number" min="2" max="20" value="5">
+      </div>
+    </div>
+    <label for="intro">वीडियो पर दिखने वाला मुख्य टेक्स्ट</label>
+    <input id="intro" placeholder="जैसे: एक नई शुरुआत">
+    <label for="closing">अंत में दिखने वाला टेक्स्ट</label>
+    <input id="closing" placeholder="जैसे: धन्यवाद | और वीडियो के लिए फॉलो करें">
+    <label for="audioFile">वैकल्पिक बैकग्राउंड ऑडियो</label>
+    <input id="audioFile" type="file" accept="audio/*">
+    <div class="hint">ऑडियो तभी जोड़ें जब आपको उसका इस्तेमाल करने की अनुमति हो।</div>
+  </section>
+
+  <section class="card">
+    <span class="pill">चरण 3</span>
+    <h2>अभियान की शर्तें (यदि लागू हों)</h2>
+    <p class="muted">अपने अभियान के स्क्रीनशॉट को देखकर शर्तें यहाँ भरें। यह संस्करण स्क्रीनशॉट को अपने-आप AI से नहीं पढ़ता।</p>
+    <div class="grid">
+      <div><label for="minDuration">न्यूनतम वीडियो लंबाई (सेकंड)</label><input id="minDuration" type="number" min="0" placeholder="जैसे 15"></div>
+      <div><label for="maxDuration">अधिकतम वीडियो लंबाई (सेकंड)</label><input id="maxDuration" type="number" min="0" placeholder="जैसे 60"></div>
+    </div>
+    <label for="requiredTags">जरूरी हैशटैग (स्पेस से अलग करें)</label>
+    <input id="requiredTags" placeholder="#Campaign #Brand">
+    <label for="bannedWords">निषिद्ध शब्द (कॉमा से अलग करें)</label>
+    <input id="bannedWords" placeholder="शब्द1, शब्द2">
+    <label for="caption">पोस्ट कैप्शन</label>
+    <textarea id="caption" placeholder="अपना कैप्शन लिखें..."></textarea>
+    <div class="actions"><button id="checkRules" class="secondary" type="button">अभियान नियम जाँचें</button></div>
+    <div id="ruleResults" class="status">अभी नियम जाँचे नहीं गए हैं।</div>
+  </section>
+
+  <section class="card">
+    <span class="pill">चरण 4</span>
+    <h2>वीडियो प्रीव्यू और एक्सपोर्ट</h2>
+    <div class="preview-wrap"><canvas id="canvas" width="1280" height="720"></canvas></div>
+    <div class="actions">
+      <button id="previewBtn" type="button">प्रीव्यू चलाएँ</button>
+      <button id="exportBtn" type="button">वीडियो बनाएं</button>
+      <button id="stopBtn" class="secondary" type="button" disabled>रोकें</button>
+      <a id="downloadLink" class="pill" hidden download="av-video.webm">वीडियो डाउनलोड करें</a>
+    </div>
+    <div id="status" class="status">पहले अपनी फोटो या वीडियो जोड़ें।</div>
+    <p class="hint">नोट: मोबाइल ब्राउज़र में यह ऐप WebM फॉर्मेट एक्सपोर्ट करता है। MP4 के लिए बाद में किसी वीडियो कन्वर्टर की जरूरत पड़ सकती है। एक्सपोर्ट के दौरान पेज खुला रखें।</p>
+  </section>
+  <p class="hint">यह एक लोकल ब्राउज़र ऐप है: आपकी चुनी हुई मीडिया फाइलें इस पेज के बाहर किसी सर्वर पर अपलोड नहीं होतीं। वीडियो एक्सपोर्ट की सुविधा आपके ब्राउज़र के MediaRecorder सपोर्ट पर निर्भर करती है।</p>
+</main>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const state = {items:[], running:false, stop:false, audioUrl:null, audioEl:null, lastUrl:null};
+  const canvas=$("canvas"), ctx=canvas.getContext("2d");
+  const status=(msg,err=false)=>{$("status").textContent=msg;$("status").className="status"+(err?" bad":"");};
+  const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  function setCanvasSize(){
+    const r=$("ratio").value;
+    if(r==="9:16"){canvas.width=720;canvas.height=1280}
+    else if(r==="1:1"){canvas.width=900;canvas.height=900}
+    else {canvas.width=1280;canvas.height=720}
+    drawBackground();
+  }
+  function drawBackground(){ctx.fillStyle="#101827";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle="#fff";ctx.textAlign="center";ctx.font=`bold ${Math.max(28,canvas.width*.045)}px system-ui`;ctx.fillText("AV VIDEO PREVIEW",canvas.width/2,canvas.height/2);}
+  $("ratio").addEventListener("change",setCanvasSize);setCanvasSize();
+
+  function drawCover(source){
+    const sw=source.videoWidth||source.naturalWidth||source.width;
+    const sh=source.videoHeight||source.naturalHeight||source.height;
+    if(!sw||!sh)return;
+    const scale=Math.max(canvas.width/sw,canvas.height/sh);
+    const w=sw*scale,h=sh*scale;
+    ctx.drawImage(source,(canvas.width-w)/2,(canvas.height-h)/2,w,h);
+  }
+  function drawText(text, y, size){
+    if(!text)return;
+    ctx.save();ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.font=`bold ${size}px system-ui, sans-serif`;
+    const maxW=canvas.width*.86;
+    let words=String(text).split(/\s+/),lines=[],line="";
+    for(const word of words){const test=line?line+" "+word:word;if(ctx.measureText(test).width>maxW&&line){lines.push(line);line=word}else line=test}
+    if(line)lines.push(line);
+    const lineH=size*1.25, boxH=lines.length*lineH+26;
+    ctx.fillStyle="rgba(0,0,0,.55)";ctx.fillRect(canvas.width*.05,y-boxH/2,canvas.width*.9,boxH);
+    ctx.fillStyle="#fff";lines.forEach((l,i)=>ctx.fillText(l,canvas.width/2,y-(lines.length-1)*lineH/2+i*lineH,maxW));
+    ctx.restore();
+  }
+  function drawScene(item, idx, total, ending=false){
+    ctx.fillStyle="#000";ctx.fillRect(0,0,canvas.width,canvas.height);
+    if(item?.type==="image"&&item.el)drawCover(item.el);
+    else if(item?.type==="video"&&item.el?.readyState>=2)drawCover(item.el);
+    else {ctx.fillStyle="#26364e";ctx.fillRect(0,0,canvas.width,canvas.height);}
+    const intro=$("intro").value.trim()||$("topic").value.trim();
+    if(idx===0&&intro)drawText(intro,canvas.height*.18,Math.max(26,canvas.width*.04));
+    if(item?.overlay)drawText(item.overlay,canvas.height*.78,Math.max(22,canvas.width*.032));
+    if(ending&&$("closing").value.trim())drawText($("closing").value.trim(),canvas.height*.5,Math.max(26,canvas.width*.04));
+    ctx.fillStyle="rgba(0,0,0,.45)";ctx.fillRect(0,canvas.height-12,canvas.width,12);
+    ctx.fillStyle="#ff7a1a";ctx.fillRect(0,canvas.height-12,canvas.width*(idx+1)/Math.max(1,total),12);
+  }
+  function renderList(){
+    $("mediaList").innerHTML="";
+    state.items.forEach((it,i)=>{
+      const div=document.createElement("div");div.className="media-item";
+      const thumb=document.createElement(it.type==="image"?"img":"video");thumb.className="thumb";thumb.src=it.url;if(it.type==="video")thumb.muted=true;
+      const right=document.createElement("div");
+      const name=document.createElement("div");name.textContent=(i+1)+". "+it.file.name;
+      const overlay=document.createElement("input");overlay.placeholder="इस सीन पर टेक्स्ट (वैकल्पिक)";overlay.value=it.overlay||"";overlay.addEventListener("input",()=>it.overlay=overlay.value);
+      const del=document.createElement("button");del.className="secondary";del.type="button";del.textContent="हटाएँ";del.style.marginTop="5px";del.addEventListener("click",()=>{URL.revokeObjectURL(it.url);it.el?.remove?.();state.items.splice(i,1);renderList();});
+      right.append(name,overlay,del);div.append(thumb,right);$("mediaList").append(div);
+    });
+  }
+  $("mediaFiles").addEventListener("change",e=>{
+    for(const file of [...e.target.files]){
+      if(!file.type.startsWith("image/")&&!file.type.startsWith("video/"))continue;
+      const url=URL.createObjectURL(file),type=file.type.startsWith("image/")?"image":"video";
+      let el;
+      if(type==="image"){el=new Image();el.src=url}
+      else {el=document.createElement("video");el.src=url;el.muted=true;el.playsInline=true;el.preload="auto"}
+      state.items.push({file,url,type,el,overlay:""});
+    }
+    renderList();status(state.items.length+" मीडिया फाइलें तैयार हैं।");
+    e.target.value="";
+  });
+  $("clearMedia").addEventListener("click",()=>{state.items.forEach(x=>{URL.revokeObjectURL(x.url);x.el?.remove?.()});state.items=[];renderList();drawBackground();status("सभी मीडिया हटा दिए गए।")});
+  $("audioFile").addEventListener("change",e=>{
+    if(state.audioUrl)URL.revokeObjectURL(state.audioUrl);
+    state.audioUrl=e.target.files[0]?URL.createObjectURL(e.target.files[0]):null;
+    status(state.audioUrl?"ऑडियो फाइल तैयार है।":"ऑडियो नहीं चुना गया।");
+  });
+  function duration(){return state.items.reduce((sum,it)=>sum+(it.type==="video"?(Number(it.el.duration)||Number($("seconds").value)||5):(Number($("seconds").value)||5)),0)}
+  function checkRules(){
+    const total=duration(),min=Number($("minDuration").value)||0,max=Number($("maxDuration").value)||0;
+    const caption=$("caption").value+" "+$("topic").value+" "+$("intro").value+" "+$("closing").value;
+    const tags=$("requiredTags").value.trim().split(/\s+/).filter(Boolean);
+    const banned=$("bannedWords").value.split(",").map(x=>x.trim()).filter(Boolean);
+    const results=[];
+    if(!state.items.length)results.push(["कम से कम एक फोटो/वीडियो जोड़ें",false]);
+    if(min)results.push(["न्यूनतम लंबाई "+min+" सेकंड (अनुमानित "+Math.round(total)+" सेकंड)",total>=min]);
+    if(max)results.push(["अधिकतम लंबाई "+max+" सेकंड (अनुमानित "+Math.round(total)+" सेकंड)",total<=max]);
+    tags.forEach(t=>results.push(["जरूरी हैशटैग/टेक्स्ट: "+t,caption.toLowerCase().includes(t.toLowerCase())]));
+    banned.forEach(w=>results.push(["निषिद्ध शब्द नहीं होना चाहिए: "+w,!caption.toLowerCase().includes(w.toLowerCase())]));
+    if(!results.length)results.push(["कोई अभियान नियम नहीं भरे गए।",true]);
+    $("ruleResults").innerHTML=results.map(([t,ok])=>`<div class="check ${ok?"good":"bad"}">${ok?"✓":"✕"} ${esc(t)}</div>`).join("");
+    return results.every(x=>x[1]);
+  }
+  $("checkRules").addEventListener("click",checkRules);
+
+  async function wait(ms){return new Promise(r=>setTimeout(r,ms))}
+  async function waitForMedia(it){
+    if(it.type==="image"){if(!it.el.complete)await new Promise((res,rej)=>{it.el.onload=res;it.el.onerror=rej});return}
+    if(it.el.readyState<2)await new Promise((res,rej)=>{it.el.onloadeddata=res;it.el.onerror=rej});
+  }
+  async function runPreview(recording=false,recorder=null,stream=null){
+    const per= Math.max(2,Math.min(20,Number($("seconds").value)||5));
+    for(let i=0;i<state.items.length&&!state.stop;i++){
+      const it=state.items[i];await waitForMedia(it);
+      if(it.type==="video"){it.el.currentTime=0;try{await it.el.play()}catch(e){}}
+      const secs=it.type==="video"?Math.max(1,Math.min(120,Number(it.el.duration)||per)):per;
+      const start=performance.now();
+      while(performance.now()-start<secs*1000&&!state.stop){
+        drawScene(it,i,state.items.length);
+        await wait(33);
+      }
+      if(it.type==="video")it.el.pause();
+    }
+    if(!state.stop&&$("closing").value.trim()){
+      const end=performance.now()+2200;
+      while(performance.now()<end&&!state.stop){drawScene(null,state.items.length,state.items.length,true);await wait(33)}
+    }
+  }
+  $("previewBtn").addEventListener("click",async()=>{
+    if(state.running||!state.items.length){status(state.running?"वीडियो पहले से चल रहा है।":"पहले मीडिया जोड़ें।",true);return}
+    state.running=true;state.stop=false;$("stopBtn").disabled=false;status("प्रीव्यू चल रहा है...");
+    try{await runPreview()}catch(e){status("प्रीव्यू में समस्या: "+e.message,true)}
+    state.running=false;$("stopBtn").disabled=true;if(!state.stop)status("प्रीव्यू पूरा हुआ।");
+  });
+  $("stopBtn").addEventListener("click",()=>{state.stop=true;if(state.audioEl)state.audioEl.pause();});
+  $("exportBtn").addEventListener("click",async()=>{
+    if(state.running){status("पहले चल रहा काम पूरा या रोकें।",true);return}
+    if(!state.items.length){status("पहले फोटो या वीडियो जोड़ें।",true);return}
+    if(!("MediaRecorder" in window)||!canvas.captureStream){status("आपका ब्राउज़र वीडियो एक्सपोर्ट सपोर्ट नहीं करता। Chrome के नए संस्करण में खोलें।",true);return}
+    if(!checkRules()){status("अभियान नियमों में कमी है। नियम ठीक करके फिर एक्सपोर्ट करें।",true);return}
+    state.running=true;state.stop=false;$("stopBtn").disabled=false;$("exportBtn").disabled=true;$("downloadLink").hidden=true;
+    let stream=canvas.captureStream(30),audioCtx=null,source=null,dest=null;
+    try{
+      if(state.audioUrl){
+        const audio=new Audio(state.audioUrl);audio.loop=true;audio.crossOrigin="anonymous";state.audioEl=audio;
+        audioCtx=new (window.AudioContext||window.webkitAudioContext)();await audioCtx.resume();
+        source=audioCtx.createMediaElementSource(audio);dest=audioCtx.createMediaStreamDestination();source.connect(dest);source.connect(audioCtx.destination);
+        dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));await audio.play();
+      }
+      const mime=["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"].find(m=>MediaRecorder.isTypeSupported(m))||"";
+      const recorder=new MediaRecorder(stream,mime?{mimeType:mime}:undefined),chunks=[];
+      recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+      const finished=new Promise((resolve,reject)=>{recorder.onstop=resolve;recorder.onerror=()=>reject(new Error("रिकॉर्डिंग में समस्या हुई"))});
+      recorder.start(500);status("वीडियो रिकॉर्ड हो रहा है। पेज खुला रखें...");
+      await runPreview(true,recorder,stream);
+      if(recorder.state!=="inactive")recorder.stop();
+      await finished;
+      if(state.stop){status("एक्सपोर्ट रोक दिया गया।");return}
+      const blob=new Blob(chunks,{type:recorder.mimeType||"video/webm"});
+      if(state.lastUrl)URL.revokeObjectURL(state.lastUrl);
+      state.lastUrl=URL.createObjectURL(blob);
+      $("downloadLink").href=state.lastUrl;$("downloadLink").hidden=false;
+      status("वीडियो तैयार है। “वीडियो डाउनलोड करें” दबाएँ। फॉर्मेट: WebM");
+    }catch(e){status("वीडियो नहीं बन सका: "+e.message,true)}
+    finally{
+      if(state.audioEl){state.audioEl.pause();state.audioEl=null}
+      if(audioCtx)try{await audioCtx.close()}catch(e){}
+      stream.getTracks().forEach(t=>t.stop());state.running=false;$("stopBtn").disabled=true;$("exportBtn").disabled=false;
+    }
+  });
+  drawBackground();
+})();
+</script>
+</body>
+</html>
